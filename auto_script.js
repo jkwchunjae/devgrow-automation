@@ -9,6 +9,8 @@
 // @grant        none
 // ==/UserScript==
 
+var lastStartTime = 0;
+
 var bugIntervals = [];
 var bugIntervalAverage = 0;
 var lastBugTime = 0;
@@ -289,11 +291,8 @@ function simulateWithItem(item) {
 }
 
 function exitAndRestart() {
-
     const exitButton = [...document.querySelectorAll('button')]
         .find(btn => btn.innerText.includes('보너스'));
-
-    console.log('exitAndRestart', !!exitButton);
 
     if (exitButton) {
         setTimeout(() => {
@@ -315,7 +314,10 @@ function exitAndRestart() {
                     .find(btn => btn.innerText.includes('시작하기'));
 
                 if (startButton) {
-                    console.log('restart', Date.now());
+                    if (lastStartTime > 0) {
+                        console.log('start', (Date.now() - lastStartTime) / 1000);
+                    }
+                    lastStartTime = Date.now();
                     elementClick(startButton);
                     lastBugTime = Date.now();
                     bugIntervals = [];

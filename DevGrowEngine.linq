@@ -1,6 +1,7 @@
 <Query Kind="Program" />
 
-public record struct View(int Time, long Lines, long Lps);
+public record struct View(int Time, long Lines, long Lps, List<LineBy> LineBy);
+public record struct LineBy(int Seconds, long Lps, long Bug);
 
 public class DevGrowEngine(double bonusLps)
 {
@@ -8,9 +9,11 @@ public class DevGrowEngine(double bonusLps)
     public Status CurrentStatus { get; private set; } = Status.Default;
     public AiTimeData AiTime { get; private set; } = AiTimeData.Default;
     public TimeSpan Time { get; private set; } = TimeSpan.Zero;
+    public int Seconds => (int)Time.TotalSeconds;
     public TimeSpan NextBugTime { get; private set; } = TimeSpan.FromSeconds(46);
+    public List<LineBy> LineBy { get; } = new List<LineBy>();
 
-    public View View => new View((int)Time.TotalSeconds, CurrentStatus.Lines, CurrentStatus.Lps);
+    public View View => new View((int)Time.TotalSeconds, CurrentStatus.Lines, CurrentStatus.Lps, LineBy);
     
     public View Next(int seconds)
     {
@@ -24,12 +27,14 @@ public class DevGrowEngine(double bonusLps)
     public View Next()
     {
         Time = Time.Add(TimeSpan.FromSeconds(1));
+        var linesByLps = CurrentStatus.Lps * (AiTime.IsAiTime ? 2 : 1);
+        var linesByBug = (Time == NextBugTime ? Math.Clamp((long)(CurrentStatus.Lines / 10), 100_000, 20_000_000) : 0L) * (AiTime.IsAiTime ? 2 : 1);
+        LineBy.Add(new LineBy(Seconds, linesByLps, linesByBug));
         CurrentStatus = CurrentStatus with
         {
             Lines = CurrentStatus.Lines
-                 + CurrentStatus.Lps
-                 + (AiTime.IsAiTime ? CurrentStatus.Lps : 0)
-                 + (Time == NextBugTime ? Math.Clamp((long)(CurrentStatus.Lines / 10), 100_000, 20_000_000) : 0L),
+                 + linesByLps
+                 + linesByBug,
         };
         if (Time == AiTime.WhenFinishAiTime)
         {
@@ -63,17 +68,18 @@ public class DevGrowEngine(double bonusLps)
                 Effect = item.BaseEffect,
                 Level = 1,
             });
+            item.Cost = (long)(item.Cost * item.CostMultiplier);
         }
         else
         {
-            var cost = (int)Math.Round(item.BaseCost * Math.Pow(item.CostMultiplier, currentItem.Level));
-            currentItem.Effect += item.BaseCost;
+            currentItem.Effect += item.BaseEffect;
             currentItem.Level++;
             CurrentStatus = CurrentStatus with
             {
-                Lines = CurrentStatus.Lines - cost,
+                Lines = CurrentStatus.Lines - item.Cost,
                 Lps = (int)(CurrentStatus.Items.Sum(x => x.Effect) * (BonusLps + 1)),
             };
+            item.Cost = (long)(item.Cost * item.CostMultiplier);
         }
     }
 }
@@ -146,40 +152,41 @@ public class Item
     public long Effect { get; set; }
 }
 
-public class ItemInfo
+public record ItemInfo
 {
     public required string Id { get; set; }
     public required string Type { get; set; }
     public long BaseCost { get; set; }
+    public long Cost { get; set; }
     public long BaseEffect { get; set; }
     public double CostMultiplier { get; set; }
 }
 
 public ItemInfo[] items = [
-    new ItemInfo { Id = "click_basic", Type = "CLICK", BaseCost = 10, BaseEffect = 1, CostMultiplier = 1.5 },
-    new ItemInfo { Id = "click_old_keyboard", Type = "CLICK", BaseCost = 100, BaseEffect = 2, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "click_gaming_mouse", Type = "CLICK", BaseCost = 250, BaseEffect = 3, CostMultiplier = 1.5 },
-    new ItemInfo { Id = "click_office_chair", Type = "CLICK", BaseCost = 500, BaseEffect = 5, CostMultiplier = 1.7 },
-    new ItemInfo { Id = "click_stackoverflow", Type = "CLICK", BaseCost = 900, BaseEffect = 8, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "click_curved_monitor", Type = "CLICK", BaseCost = 1500, BaseEffect = 12, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "click_standing_desk", Type = "CLICK", BaseCost = 5000, BaseEffect = 35, CostMultiplier = 1.7 },
-    new ItemInfo { Id = "click_macbook", Type = "CLICK", BaseCost = 12000, BaseEffect = 80, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "click_ai", Type = "CLICK", BaseCost = 25000, BaseEffect = 150, CostMultiplier = 1.8 },
-    new ItemInfo { Id = "click_hacker", Type = "CLICK", BaseCost = 70000, BaseEffect = 200, CostMultiplier = 1.75 },
-    new ItemInfo { Id = "click_trillion_code", Type = "CLICK", BaseCost = 150000, BaseEffect = 200, CostMultiplier = 1.9 },
-    new ItemInfo { Id = "click_guild", Type = "CLICK", BaseCost = 600000, BaseEffect = 750, CostMultiplier = 1.8 },
-    new ItemInfo { Id = "click_rocket", Type = "CLICK", BaseCost = 5000000, BaseEffect = 4500, CostMultiplier = 2.0 },
-    new ItemInfo { Id = "auto_junior", Type = "AUTO", BaseCost = 20, BaseEffect = 1, CostMultiplier = 1.4 },
-    new ItemInfo { Id = "auto_intern", Type = "AUTO", BaseCost = 60, BaseEffect = 2, CostMultiplier = 1.45 },
-    new ItemInfo { Id = "auto_mid", Type = "AUTO", BaseCost = 150, BaseEffect = 3, CostMultiplier = 1.5 },
-    new ItemInfo { Id = "auto_senior", Type = "AUTO", BaseCost = 400, BaseEffect = 6, CostMultiplier = 1.55 },
-    new ItemInfo { Id = "auto_teamlead", Type = "AUTO", BaseCost = 1000, BaseEffect = 10, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "auto_tech_writer", Type = "AUTO", BaseCost = 2200, BaseEffect = 20, CostMultiplier = 1.5 },
-    new ItemInfo { Id = "auto_copilot", Type = "AUTO", BaseCost = 3500, BaseEffect = 30, CostMultiplier = 1.65 },
-    new ItemInfo { Id = "auto_tech_seminar", Type = "AUTO", BaseCost = 8000, BaseEffect = 60, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "auto_remote_work", Type = "AUTO", BaseCost = 15000, BaseEffect = 100, CostMultiplier = 1.7 },
-    new ItemInfo { Id = "auto_cicd", Type = "AUTO", BaseCost = 50000, BaseEffect = 120, CostMultiplier = 1.6 },
-    new ItemInfo { Id = "auto_server_room", Type = "AUTO", BaseCost = 100000, BaseEffect = 150, CostMultiplier = 1.8 },
-    new ItemInfo { Id = "auto_hire_junior", Type = "AUTO", BaseCost = 400000, BaseEffect = 550, CostMultiplier = 1.75 },
-    new ItemInfo { Id = "auto_ai_center", Type = "AUTO", BaseCost = 5000000, BaseEffect = 5000, CostMultiplier = 1.9 }
+    //new ItemInfo { Id = "click_basic", Type = "CLICK", BaseCost = 10, Cost = 10, BaseEffect = 1, CostMultiplier = 1.5 },
+    //new ItemInfo { Id = "click_old_keyboard", Type = "CLICK", BaseCost = 100, Cost = 100, BaseEffect = 2, CostMultiplier = 1.6 },
+    //new ItemInfo { Id = "click_gaming_mouse", Type = "CLICK", BaseCost = 250, Cost = 250, BaseEffect = 3, CostMultiplier = 1.5 },
+    //new ItemInfo { Id = "click_office_chair", Type = "CLICK", BaseCost = 500, Cost = 500, BaseEffect = 5, CostMultiplier = 1.7 },
+    //new ItemInfo { Id = "click_stackoverflow", Type = "CLICK", BaseCost = 900, Cost = 900, BaseEffect = 8, CostMultiplier = 1.6 },
+    //new ItemInfo { Id = "click_curved_monitor", Type = "CLICK", BaseCost = 1500, Cost = 1500, BaseEffect = 12, CostMultiplier = 1.6 },
+    //new ItemInfo { Id = "click_standing_desk", Type = "CLICK", BaseCost = 5000, Cost = 5000, BaseEffect = 35, CostMultiplier = 1.7 },
+    //new ItemInfo { Id = "click_macbook", Type = "CLICK", BaseCost = 12000, Cost = 12000, BaseEffect = 80, CostMultiplier = 1.6 },
+    //new ItemInfo { Id = "click_ai", Type = "CLICK", BaseCost = 25000, Cost = 25000, BaseEffect = 150, CostMultiplier = 1.8 },
+    //new ItemInfo { Id = "click_hacker", Type = "CLICK", BaseCost = 70000, Cost = 70000, BaseEffect = 200, CostMultiplier = 1.75 },
+    //new ItemInfo { Id = "click_trillion_code", Type = "CLICK", BaseCost = 150000, Cost = 150000, BaseEffect = 200, CostMultiplier = 1.9 },
+    //new ItemInfo { Id = "click_guild", Type = "CLICK", BaseCost = 600000, Cost = 600000, BaseEffect = 750, CostMultiplier = 1.8 },
+    //new ItemInfo { Id = "click_rocket", Type = "CLICK", BaseCost = 5000000, Cost = 5000000, BaseEffect = 4500, CostMultiplier = 2.0 },
+    new ItemInfo { Id = "auto_junior", Type = "AUTO", BaseCost = 20, Cost = 20, BaseEffect = 1, CostMultiplier = 1.4 },
+    new ItemInfo { Id = "auto_intern", Type = "AUTO", BaseCost = 60, Cost = 60, BaseEffect = 2, CostMultiplier = 1.45 },
+    new ItemInfo { Id = "auto_mid", Type = "AUTO", BaseCost = 150, Cost = 150, BaseEffect = 3, CostMultiplier = 1.5 },
+    new ItemInfo { Id = "auto_senior", Type = "AUTO", BaseCost = 400, Cost = 400, BaseEffect = 6, CostMultiplier = 1.55 },
+    new ItemInfo { Id = "auto_teamlead", Type = "AUTO", BaseCost = 1000, Cost = 1000, BaseEffect = 10, CostMultiplier = 1.6 },
+    new ItemInfo { Id = "auto_tech_writer", Type = "AUTO", BaseCost = 2200, Cost = 2200, BaseEffect = 20, CostMultiplier = 1.5 },
+    new ItemInfo { Id = "auto_copilot", Type = "AUTO", BaseCost = 3500, Cost = 3500, BaseEffect = 30, CostMultiplier = 1.65 },
+    new ItemInfo { Id = "auto_tech_seminar", Type = "AUTO", BaseCost = 8000, Cost = 8000, BaseEffect = 60, CostMultiplier = 1.6 },
+    new ItemInfo { Id = "auto_remote_work", Type = "AUTO", BaseCost = 15000, Cost = 15000, BaseEffect = 100, CostMultiplier = 1.7 },
+    new ItemInfo { Id = "auto_cicd", Type = "AUTO", BaseCost = 50000, Cost = 50000, BaseEffect = 120, CostMultiplier = 1.6 },
+    new ItemInfo { Id = "auto_server_room", Type = "AUTO", BaseCost = 100000, Cost = 100000, BaseEffect = 150, CostMultiplier = 1.8 },
+    new ItemInfo { Id = "auto_hire_junior", Type = "AUTO", BaseCost = 400000, Cost = 400000, BaseEffect = 550, CostMultiplier = 1.75 },
+    new ItemInfo { Id = "auto_ai_center", Type = "AUTO", BaseCost = 5000000, Cost = 5000000, BaseEffect = 5000, CostMultiplier = 1.9 }
 ];

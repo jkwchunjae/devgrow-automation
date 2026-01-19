@@ -113,7 +113,7 @@ function fixBug() {
 function updateCostTable() {
     const container = document.querySelector('div[id$="content-auto"]');
     if (!container) {
-        console.warn('컨테이너를 찾을 수 없습니다.');
+        // console.warn('컨테이너를 찾을 수 없습니다.');
         return;
     }
 
@@ -179,7 +179,7 @@ function getStockOption() {
       .find(el => el.textContent?.trim() === '스톡 옵션');
 
     if (!stockLabelEl) {
-      console.log('스톡 옵션 라벨을 찾지 못했습니다.');
+    //   console.log('스톡 옵션 라벨을 찾지 못했습니다.');
       return;
     }
 
@@ -190,7 +190,7 @@ function getStockOption() {
       stockLabelEl.closest('div');
 
     if (!cardEl) {
-      console.log('스톡 옵션이 속한 상위 컨테이너를 찾지 못했습니다.');
+      // console.log('스톡 옵션이 속한 상위 컨테이너를 찾지 못했습니다.');
       return;
     }
 
@@ -199,7 +199,7 @@ function getStockOption() {
       .find(el => el.textContent?.trim() === '초당 코드 생산량');
 
     if (!throughputLabelEl) {
-      console.log('카드 안에서 "초당 코드 생산량" 라벨을 찾지 못했습니다.');
+      // console.log('카드 안에서 "초당 코드 생산량" 라벨을 찾지 못했습니다.');
       return;
     }
 
@@ -207,14 +207,14 @@ function getStockOption() {
     const valueEl = throughputLabelEl.nextElementSibling;
 
     if (!valueEl) {
-      console.log('"초당 코드 생산량" 라벨의 값 요소를 찾지 못했습니다.');
+      // console.log('"초당 코드 생산량" 라벨의 값 요소를 찾지 못했습니다.');
       return;
     }
 
     const match = valueEl.textContent.match(/\d+/);
     const value = match ? Number(match[0]) : null;
 
-    console.log('초당 코드 생산량:', value);
+    // console.log('초당 코드 생산량:', value);
     stockOption = value;
 }
 
@@ -253,11 +253,11 @@ function simulateAndExecute() {
     // console.log('simulate', timeNoItem, results);
 
     if (bestItem.time < timeNoItem - 1) {
-        console.log('execute', {
-            remainTime: timeNoItem,
-            newTime: bestItem.time,
-            diff: timeNoItem - bestItem.time
-        }, { lps: bestItem.lps, cost: bestItem.cost });
+        // console.log('execute', {
+        //     remainTime: timeNoItem,
+        //     newTime: bestItem.time,
+        //     diff: timeNoItem - bestItem.time
+        // }, { lps: bestItem.lps, cost: bestItem.cost });
         bestItem.card.click();
     } else {
         // console.log('no execute');
@@ -284,9 +284,16 @@ function simulateWithItem(item) {
     while (lines < goal) {
         time++;
         lines += lps;
-        if (Math.floor(((Date.now() - lastBugTime) / 1000 + time) % bugIntervalAverage) === 0) {
-            // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
-            lines += Math.max(100000, Math.min(20000000, (lines / 10)));
+        if (lastBugTime > 0) {
+            if (Math.floor(((Date.now() - lastBugTime) / 1000 + time) % bugIntervalAverage) === 0) {
+                // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
+                lines += Math.max(100000, Math.min(20000000, (lines / 10)));
+            }
+        } else {
+            if (time % bugIntervalAverage === 0) {
+                // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
+                lines += Math.max(100000, Math.min(20000000, (lines / 10)));
+            }
         }
     }
     return time;

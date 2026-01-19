@@ -74,6 +74,8 @@ function initAction() {
         autoButton.scrollIntoView({block:'center'});
 
         elementClick(autoButton);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 

@@ -214,7 +214,7 @@ function getStockOption() {
     const match = valueEl.textContent.match(/\d+/);
     const value = match ? Number(match[0]) : null;
 
-    // console.log('초당 코드 생산량:', value);
+    console.log('[debug] 초당 코드 생산량:', value);
     stockOption = value;
 }
 
@@ -324,7 +324,7 @@ function exitAndRestart() {
 
                 if (startButton) {
                     if (lastStartTime > 0) {
-                        console.log('start', (Date.now() - lastStartTime) / 1000);
+                        console.log('[debug] start', (Date.now() - lastStartTime) / 1000);
                     }
                     lastStartTime = Date.now();
                     elementClick(startButton);

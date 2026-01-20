@@ -286,21 +286,12 @@ function simulateWithItem(item) {
         lps += item.lps + item.lps * stockOption / 100;
     }
 
-    var time = 1;
+    var time = 0;
     while (lines < goal) {
-        time++;
-        lines += lps;
-        if (lastBugTime > 0) {
-            if (Math.floor(((Date.now() - lastBugTime) / 1000 + time) % bugIntervalAverage) === 0) {
-                // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
-                lines += Math.max(100000, Math.min(20000000, (lines / 10)));
-            }
-        } else {
-            if (time % bugIntervalAverage === 0) {
-                // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
-                lines += Math.max(100000, Math.min(20000000, (lines / 10)));
-            }
-        }
+        time += bugIntervalAverage;
+        lines += lps * bugIntervalAverage;
+        // 버그를 잡으면 최대 2000만, 최소 10만 줄을 얻는다.
+        lines += Math.max(100000, Math.min(20000000, (lines / 10)));
     }
     return time;
 }

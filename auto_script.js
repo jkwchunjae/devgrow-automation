@@ -80,7 +80,7 @@ function initAction() {
 }
 
 function aiRefactoring() {
-    if (currentStatus && currentStatus.lps > 1500000) {
+    if (currentStatus && currentStatus.lps > 1_500_000) {
         [...document.querySelectorAll('button')]
             .find(btn => btn.innerText.includes('AI 리팩토링'))
             ?.click();
@@ -230,7 +230,7 @@ function simulateAndExecute() {
         return;
     }
 
-    if (currentStatus.lines > 500000000) {
+    if (currentStatus.lines > 500_000_000) {
         // 5억 넘어가면 계산하는게 의미가 없다.
         return;
     }
@@ -250,6 +250,9 @@ function simulateAndExecute() {
 
     const bestItem = results[0];
 
+    if (currentStatus.lines === 100_000) {
+        console.log('simulate_100000', timeNoItem, results);
+    }
     // console.log('simulate', timeNoItem, results);
 
     if (bestItem.time < timeNoItem - 1) {
@@ -266,11 +269,14 @@ function simulateAndExecute() {
 }
 
 function simulateWithItem(item) {
+    if (currentStatus.lines === 100_000) {
+        bugIntervalAverage = 46;
+    }
     if (!currentStatus || bugIntervalAverage === 0) {
         return 0;
     }
 
-    const goal = 2147483647;
+    const goal = 2_147_483_647;
     var lines = currentStatus.lines;
     var lps = currentStatus.lps;
 

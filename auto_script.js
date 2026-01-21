@@ -46,7 +46,7 @@ costTable: [
 (function() {
     'use strict';
 
-    setInterval(() => initAction(), 3000);
+    setInterval(() => initAction(), 10000);
 
     setInterval(() => fixBug(), 1000);
     setInterval(() => updateCostTable(), 1000);
@@ -54,6 +54,7 @@ costTable: [
     setInterval(() => getStockOption(), 1000);
     setInterval(() => simulateAndExecute(), 5000);
     setInterval(() => exitAndRestart(), 5000);
+    setInterval(() => refresh(), 3000);
 
     fetchHookAndUpdateCurrentStatus();
 })();
@@ -80,7 +81,7 @@ function initAction() {
 }
 
 function aiRefactoring() {
-    if (currentStatus && currentStatus.lps > 1_500_000) {
+    if (currentStatus && currentStatus.lps > 200_000_000) {
         [...document.querySelectorAll('button')]
             .find(btn => btn.innerText.includes('AI 리팩토링'))
             ?.click();
@@ -230,11 +231,6 @@ function simulateAndExecute() {
         return;
     }
 
-    if (currentStatus.lines > 500_000_000) {
-        // 5억 넘어가면 계산하는게 의미가 없다.
-        return;
-    }
-
     const results = costTable
         .filter(item => item.cost <= currentStatus.lines)
         .filter(item => item.lps >= 30)
@@ -296,11 +292,17 @@ function simulateWithItem(item) {
     return time;
 }
 
+var exitProcessing = false;
 function exitAndRestart() {
+    if (exitProcessing) {
+        return;
+    }
+
     const exitButton = [...document.querySelectorAll('button')]
         .find(btn => btn.innerText.includes('보너스'));
 
     if (exitButton) {
+        exitProcessing = true;
         setTimeout(() => {
             elementClick(exitButton);
             bugIntervals = [];
@@ -324,6 +326,7 @@ function exitAndRestart() {
                         console.log('[debug] start', (Date.now() - lastStartTime) / 1000);
                     }
                     lastStartTime = Date.now();
+                    exitProcessing = false;
                     elementClick(startButton);
                     lastBugTime = Date.now();
                     bugIntervals = [];
@@ -335,8 +338,8 @@ function exitAndRestart() {
                         lps: 0
                     };
                 }
-            }, 5000);
-        }, 5000);
+            }, 3000);
+        }, 3000);
     }
 }
 
@@ -413,5 +416,22 @@ function updateRemainTime(remainTime) {
     } else {
         remainEl.querySelector('.remain-time-value').textContent = remainTimeText;
         remainEl.querySelector('.finish-time').textContent = finishTimeText;
+    }
+}
+
+var first3BTime = 0;
+function refresh() {
+    // 이 함수는 3초에 한 번 불리는 함수
+    // 1분 이상 currentStatus.lines가 22억이 넘은 상태로 지속하면 새로고침 한다.
+    if (currentStatus.lines > 2_200_000_000) {
+        if (first3BTime === 0) {
+            first3BTime = Date.now();
+        } else {
+            if (Date.now() - first3BTime > 30_000) {
+                window.location.reload();
+            }
+        }
+    } else {
+        first3BTime = 0;
     }
 }

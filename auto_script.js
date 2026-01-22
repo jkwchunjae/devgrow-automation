@@ -108,9 +108,7 @@ function fixBug() {
             // console.log('bug', bugIntervalAverage, bugIntervals);
 
             if (firstBug) {
-                setTimeout(() => {
-                    runHardcode();
-                }, 1000);
+                runHardcode();
             }
         }
         const clickable = container.querySelector('div.cursor-pointer');
@@ -123,48 +121,31 @@ function fixBug() {
 
 async function runHardcode() {
     // 여기 들어오면 일단 돈은 10만점 있다는 뜻이다.
-    updateCostTable();
-    costTable.find(x => x.cost === 100_000)?.card.click();
+
+    const buyItemFunc = async (itemFunc, itemCount) => {
+        let count = 0;
+        while (true) {
+            updateCostTable();
+            const item = costTable.find(itemFunc)
     
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    updateCostTable();
-    costTable.find(x => x.cost === 400_000)?.card.click();
-
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateCostTable();
-        const aiCenterItem = costTable.find(x => x.lps === 5000)
-        if (aiCenterItem) {
-            if (aiCenterItem.cost >= 200_000_000) {
-                break;
+            if (item) {
+                item.card.click();
+                count++;
+                if (count >= itemCount) {
+                    break;
+                }
             }
-            aiCenterItem.card.click();
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
-    }
+    };
 
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateCostTable();
-        const juniorItem = costTable.find(x => x.lps === 550)
-        if (juniorItem) {
-            if (juniorItem.cost >= 20_000_000) {
-                break;
-            }
-            juniorItem.card.click();
-        }
-    }
+    await buyItemFunc(x => x.lps === 150, 2);
+    await buyItemFunc(x => x.lps === 550, 2);
 
-    while (true) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        updateCostTable();
-        const ownServerItem = costTable.find(x => x.lps === 150)
-        if (ownServerItem) {
-            if (ownServerItem.cost >= 6_000_000) {
-                break;
-            }
-            ownServerItem.card.click();
-        }
-    }
+    await buyItemFunc(x => x.lps === 5000, 7);
+    await buyItemFunc(x => x.lps === 550, 7);
+    await buyItemFunc(x => x.lps === 150, 7);
+    await buyItemFunc(x => x.lps === 120, 7);
 }
 
 function updateCostTable() {
@@ -176,7 +157,7 @@ function updateCostTable() {
 
     const localCostTable = [];
 
-    const cards = container.querySelectorAll('[data-slot="tooltip-trigger"]');
+    const cards = container.querySelectorAll('[data-slot="tooltip-trigger"].cursor-pointer');
     cards.forEach(card => {
         const rateEl = [...card.querySelectorAll('.text-gray-400')]
             .find(el => el.innerText.trim().startsWith('초당'));

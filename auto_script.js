@@ -52,7 +52,7 @@ costTable: [
     setInterval(() => updateCostTable(), 1000);
     setInterval(() => aiRefactoring(), 1000);
     setInterval(() => getStockOption(), 1000);
-    setInterval(() => simulateAndExecute(), 5000);
+    // setInterval(() => simulateAndExecute(), 5000);
     setInterval(() => exitAndRestart(), 5000);
     setInterval(() => refresh(), 3000);
 
@@ -81,7 +81,7 @@ function initAction() {
 }
 
 function aiRefactoring() {
-    if (currentStatus && currentStatus.lps > 200_000_000) {
+    if (currentStatus && currentStatus.lines > 200_000_000) {
         [...document.querySelectorAll('button')]
             .find(btn => btn.innerText.includes('AI 리팩토링'))
             ?.click();
@@ -95,6 +95,10 @@ function fixBug() {
         if (lastBugTime === 0) {
             lastBugTime = currentBugTime;
         } else {
+            var firstBug = false;
+            if (currentStatus.lines === 0) {
+                firstBug = true;
+            }
             var bugInterval = Math.floor((currentBugTime - lastBugTime) / 1000);
             bugIntervals.push(bugInterval);
             // 마지막 10개만 저장
@@ -102,6 +106,12 @@ function fixBug() {
             bugIntervalAverage = Math.floor(bugIntervals.reduce((a, b) => a + b, 0) / bugIntervals.length);
             lastBugTime = currentBugTime;
             // console.log('bug', bugIntervalAverage, bugIntervals);
+
+            if (firstBug) {
+                setTimeout(() => {
+                    runHardcode();
+                }, 1000);
+            }
         }
         const clickable = container.querySelector('div.cursor-pointer');
         if (clickable && !clickable.__clicked) {
@@ -109,6 +119,52 @@ function fixBug() {
             clickable.click();
         }
     });
+}
+
+async function runHardcode() {
+    // 여기 들어오면 일단 돈은 10만점 있다는 뜻이다.
+    updateCostTable();
+    costTable.find(x => x.cost === 100_000)?.card.click();
+    
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    updateCostTable();
+    costTable.find(x => x.cost === 400_000)?.card.click();
+
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        updateCostTable();
+        const aiCenterItem = costTable.find(x => x.lps === 5000)
+        if (aiCenterItem) {
+            if (aiCenterItem.cost >= 200_000_000) {
+                break;
+            }
+            aiCenterItem.card.click();
+        }
+    }
+
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        updateCostTable();
+        const juniorItem = costTable.find(x => x.lps === 550)
+        if (juniorItem) {
+            if (juniorItem.cost >= 20_000_000) {
+                break;
+            }
+            juniorItem.card.click();
+        }
+    }
+
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        updateCostTable();
+        const ownServerItem = costTable.find(x => x.lps === 150)
+        if (ownServerItem) {
+            if (ownServerItem.cost >= 6_000_000) {
+                break;
+            }
+            ownServerItem.card.click();
+        }
+    }
 }
 
 function updateCostTable() {
